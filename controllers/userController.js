@@ -5,7 +5,18 @@ const {
 } = require('../utils/jwtUtils');
 const logger = require('../config/logger');
 
-// Register a new user
+/**
+ * @function register
+ * @description Registers a new user.
+ * @route POST /users/register
+ * @access Public
+ * @param {string} firstName - User's first name.
+ * @param {string} lastName - User's last name.
+ * @param {string} email - User's email.
+ * @param {string} password - User's password.
+ * @param {string} role - Role of the user (e.g., employee, storekeeper).
+ * @returns {Object} Success message and user details.
+ */
 exports.register = async (req, res) => {
   const { firstName, lastName, email, password, role } = req.body; // Updated
   try {
@@ -30,7 +41,15 @@ exports.register = async (req, res) => {
   }
 };
 
-// User login
+/**
+ * @function login
+ * @description Logs in a user and generates tokens.
+ * @route POST /users/login
+ * @access Public
+ * @param {string} email - User's email.
+ * @param {string} password - User's password.
+ * @returns {Object} Access and refresh tokens.
+ */
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -55,7 +74,13 @@ exports.login = async (req, res) => {
   }
 };
 
-// User logout
+/**
+ * @function logout
+ * @description Logs out the current user.
+ * @route POST /users/logout
+ * @access Authenticated User
+ * @returns {Object} Success message.
+ */
 exports.logout = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -71,7 +96,14 @@ exports.logout = async (req, res) => {
   }
 };
 
-// Refresh access token using refresh token
+/**
+ * @function refreshToken
+ * @description Generates a new access token using the refresh token.
+ * @route POST /users/refresh-token
+ * @access Public
+ * @param {string} refreshToken - User's refresh token.
+ * @returns {Object} New access token.
+ */
 exports.refreshToken = async (req, res) => {
   const { refreshToken } = req.body;
   if (!refreshToken)
@@ -94,7 +126,13 @@ exports.refreshToken = async (req, res) => {
   }
 };
 
-// Get user profile (authenticated users only)
+/**
+ * @function getUserProfile
+ * @description Retrieves the profile of the authenticated user.
+ * @route GET /users/profile
+ * @access Authenticated User
+ * @returns {Object} User profile details.
+ */
 exports.getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
@@ -106,6 +144,14 @@ exports.getUserProfile = async (req, res) => {
   }
 };
 
+/**
+ * @function updateNotificationSettings
+ * @description Updates the notification settings for the user.
+ * @route PUT /users/notification-settings
+ * @access Authenticated User
+ * @param {boolean} notificationsEnabled - New notification setting.
+ * @returns {Object} Success message.
+ */
 exports.updateNotificationSettings = async (req, res) => {
   const { notificationsEnabled } = req.body;
 

@@ -1,23 +1,29 @@
+/**
+ * @module server
+ * @description Main server configuration for the application.
+ */
+
 const express = require('express');
 const connectDB = require('./config/database');
 const userRoutes = require('./routes/userRoutes');
 const itemRoutes = require('./routes/itemRoutes');
-const logger = require('./config/logger'); // Import logger
-const expressWinston = require('express-winston'); // Middleware to log requests
+const logger = require('./config/logger');
+const expressWinston = require('express-winston');
 
 require('dotenv').config();
 const app = express();
-
 app.use(express.json());
 
-// Log all HTTP requests
+/**
+ * Middleware to log all HTTP requests.
+ */
 app.use(
   expressWinston.logger({
     winstonInstance: logger,
     meta: true, // Include request metadata
     msg: 'HTTP {{req.method}} {{req.url}} {{res.statusCode}}',
     expressFormat: true, // Use default Express format
-    colorize: false, // Already handled by logger config
+    colorize: false,
   })
 );
 

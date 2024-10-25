@@ -24,7 +24,18 @@ const validateItemData = (data) => {
   }
 };
 
-// Create a new item
+/**
+ * @function createItem
+ * @description Creates a new item in the inventory.
+ * @route POST /items
+ * @access Storekeeper
+ * @param {string} name - Name of the item.
+ * @param {string} description - Description of the item.
+ * @param {string} model - Model of the item.
+ * @param {string} category - Category of the item.
+ * @param {number} quantity - Quantity of the item in stock.
+ * @returns {Object} Created item and success message.
+ */
 exports.createItem = async (req, res) => {
   const { name, description, model, category, quantity } = req.body;
   try {
@@ -44,13 +55,20 @@ exports.createItem = async (req, res) => {
   }
 };
 
-// Get all items with optional filters
+/**
+ * @function getItems
+ * @description Retrieves all items with optional filters.
+ * @route GET /items
+ * @access Public
+ * @query {Object} filters - Optional filters to apply.
+ * @returns {Array} List of items.
+ */
 exports.getItems = async (req, res) => {
   const filters = req.query;
   try {
     const items = await Item.find(filters).populate(
       'assignments.user',
-      'name email'
+      'email'
     );
     res.json(items);
   } catch (error) {
@@ -58,7 +76,14 @@ exports.getItems = async (req, res) => {
   }
 };
 
-// Get a single item by ID
+/**
+ * @function getItemById
+ * @description Retrieves a specific item by ID.
+ * @route GET /items/:id
+ * @access Public
+ * @param {string} id - ID of the item to retrieve.
+ * @returns {Object} Retrieved item.
+ */
 exports.getItemById = async (req, res) => {
   try {
     const item = await Item.findById(req.params.id).populate(
@@ -72,7 +97,14 @@ exports.getItemById = async (req, res) => {
   }
 };
 
-// Update an item by ID
+/**
+ * @function updateItem
+ * @description Updates an existing item by ID.
+ * @route PUT /items/:id
+ * @access Storekeeper
+ * @param {string} id - ID of the item to update.
+ * @returns {Object} Updated item and success message.
+ */
 exports.updateItem = async (req, res) => {
   try {
     validateItemData(req.body);
@@ -88,7 +120,14 @@ exports.updateItem = async (req, res) => {
   }
 };
 
-// Delete an item by ID
+/**
+ * @function deleteItem
+ * @description Deletes an item by ID.
+ * @route DELETE /items/:id
+ * @access Storekeeper
+ * @param {string} id - ID of the item to delete.
+ * @returns {Object} Success message.
+ */
 exports.deleteItem = async (req, res) => {
   try {
     const item = await Item.findByIdAndDelete(req.params.id);
@@ -101,7 +140,16 @@ exports.deleteItem = async (req, res) => {
   }
 };
 
-// Assign an item to a user
+/**
+ * @function assignItem
+ * @description Assigns an item to a user.
+ * @route POST /items/:itemId/assign
+ * @access Storekeeper
+ * @param {string} itemId - ID of the item to assign.
+ * @param {string} userId - ID of the user to assign the item.
+ * @param {Date} returnDate - Expected return date of the item.
+ * @returns {Object} Success message and updated item.
+ */
 exports.assignItem = async (req, res) => {
   const { userId, returnDate } = req.body;
   try {
@@ -139,6 +187,15 @@ exports.assignItem = async (req, res) => {
   }
 };
 
+/**
+ * @function returnItem
+ * @description Returns an assigned item to the inventory.
+ * @route PUT /items/:itemId/return
+ * @access Storekeeper
+ * @param {string} itemId - ID of the item being returned.
+ * @param {string} userId - ID of the user returning the item.
+ * @returns {Object} Success message and updated item.
+ */
 exports.returnItem = async (req, res) => {
   const { itemId } = req.params;
   const { userId } = req.body;
@@ -178,6 +235,17 @@ exports.returnItem = async (req, res) => {
   }
 };
 
+/**
+ * @function reassignItem
+ * @description Reassigns an item from one user to another.
+ * @route PUT /items/:itemId/reassign
+ * @access Storekeeper
+ * @param {string} itemId - ID of the item being reassigned.
+ * @param {string} currentUserId - ID of the current user.
+ * @param {string} newUserId - ID of the new user.
+ * @param {Date} returnDate - Expected return date of the item.
+ * @returns {Object} Success message and updated item.
+ */
 exports.reassignItem = async (req, res) => {
   const { itemId } = req.params;
   const { currentUserId, newUserId, returnDate } = req.body;
@@ -230,6 +298,15 @@ exports.reassignItem = async (req, res) => {
   }
 };
 
+/**
+ * @function requestItem
+ * @description Allows a user to request an item.
+ * @route POST /items/:itemId/request
+ * @access Employee
+ * @param {string} itemId - ID of the item to request.
+ * @param {string} userId - ID of the user making the request.
+ * @returns {Object} Success message.
+ */
 exports.requestItem = async (req, res) => {
   const { itemId } = req.params;
   const userId = req.body.userId;
@@ -258,6 +335,15 @@ exports.requestItem = async (req, res) => {
   }
 };
 
+/**
+ * @function searchItems
+ * @description Searches items by name or category.
+ * @route GET /items/search
+ * @access Public
+ * @query {string} name - Name of the item (optional).
+ * @query {string} category - Category of the item (optional).
+ * @returns {Array} List of matching items.
+ */
 exports.searchItems = async (req, res) => {
   const { name, category } = req.query;
   const filter = {};
@@ -275,6 +361,13 @@ exports.searchItems = async (req, res) => {
   }
 };
 
+/**
+ * @function viewAssignedItems
+ * @description Retrieves all items assigned to the current user.
+ * @route GET /items/assigned
+ * @access Employee
+ * @returns {Array} List of assigned items.
+ */
 exports.viewAssignedItems = async (req, res) => {
   try {
     const items = await Item.find({

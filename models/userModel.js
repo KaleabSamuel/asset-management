@@ -1,6 +1,18 @@
+/**
+ * @module userModel
+ * @description Mongoose model for managing users and notifications.
+ */
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+/**
+ * @typedef Notification
+ * @property {string} message - Notification message.
+ * @property {boolean} read - Whether the notification has been read.
+ * @property {string} type - Type of notification ('assignment', 'request', or 'other').
+ * @property {boolean} enabled - Whether the notification has been enabled or not.
+ */
 const notificationSchema = new mongoose.Schema({
   message: String,
   read: { type: Boolean, default: false },
@@ -15,6 +27,16 @@ const notificationSchema = new mongoose.Schema({
   },
 });
 
+/**
+ * @typedef User
+ * @property {string} firstName - User's first name.
+ * @property {string} lastName - User's last name.
+ * @property {string} email - User's email address.
+ * @property {string} password - User's hashed password.
+ * @property {string} role - Role of the user ('employee' or 'storekeeper').
+ * @property {Notification[]} notifications - List of notifications for the user.
+ * @property {string} refreshToken - JWT refresh token for the user.
+ */
 const userSchema = new mongoose.Schema(
   {
     firstName: { type: String, required: true }, // Changed from 'name'

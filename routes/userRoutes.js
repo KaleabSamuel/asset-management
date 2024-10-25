@@ -1,3 +1,8 @@
+/**
+ * @module userRoutes
+ * @description Express routes for managing user authentication and profiles.
+ */
+
 const express = require('express');
 const {
   register,
@@ -11,19 +16,23 @@ const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-// Register a new user
+/**
+ * POST /users/register - Register a new user.
+ * POST /users/login - Log in a user and generate tokens.
+ * POST /users/logout - Log out the current user.
+ * POST /users/refresh-token - Refresh the access token.
+ * GET /users/profile - Get the logged-in user's profile.
+ * POST /users/notifications/settings - Update notification settings.
+ */
+
 router.post('/register', register);
 
-// User login
 router.post('/login', login);
 
-// User logout (requires authentication)
 router.post('/logout', protect, logout);
 
-// Refresh access token
 router.post('/refresh-token', refreshToken);
 
-// Get authenticated user profile
 router.get('/profile', protect, getUserProfile);
 
 router.post('/notifications/settings', protect, updateNotificationSettings);

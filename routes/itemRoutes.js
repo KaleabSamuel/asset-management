@@ -1,3 +1,8 @@
+/**
+ * @module itemRoutes
+ * @description Express routes for managing items and assignments.
+ */
+
 const express = require('express');
 const {
   createItem,
@@ -16,24 +21,32 @@ const { protect, storekeeperOnly } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-// Get all items with optional filters (available to all authenticated users)
+/**
+ * GET /items - Get all items.
+ * POST /items - Create a new item (Storekeeper only).
+ * PUT /items/:id - Update an item (Storekeeper only).
+ * DELETE /items/:id - Delete an item (Storekeeper only).
+ * POST /items/assign/:itemId - Assign an item to a user (Storekeeper only).
+ * PUT /items/return/:itemId - Return an assigned item (Storekeeper only).
+ * PUT /items/reassign/:itemId - Reassign an item (Storekeeper only).
+ * POST /items/request/:itemId - Request an item.
+ * GET /items/assigned - Get assigned items for the logged-in user.
+ */
+
 router.get('/', protect, getItems);
 
 router.get('/search', protect, searchItems);
+
 router.get('/assigned', protect, viewAssignedItems);
-// Get a single item by ID
+
 router.get('/:id', protect, getItemById);
 
-// Create a new item (storekeepers only)
 router.post('/', protect, storekeeperOnly, createItem);
 
-// Update an item by ID (storekeepers only)
 router.put('/:id', protect, storekeeperOnly, updateItem);
 
-// Delete an item by ID (storekeepers only)
 router.delete('/:id', protect, storekeeperOnly, deleteItem);
 
-// Assign an item to a user (storekeepers only)
 router.post('/assign/:itemId', protect, storekeeperOnly, assignItem);
 
 router.put('/return/:itemId', protect, storekeeperOnly, returnItem);

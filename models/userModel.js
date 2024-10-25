@@ -1,6 +1,20 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+const notificationSchema = new mongoose.Schema({
+  message: String,
+  read: { type: Boolean, default: false },
+  type: {
+    type: String,
+    enum: ['assignment', 'request', 'other'],
+    default: 'other',
+  },
+  enabled: {
+    type: Boolean,
+    default: true,
+  },
+});
+
 const userSchema = new mongoose.Schema(
   {
     firstName: { type: String, required: true }, // Changed from 'name'
@@ -12,6 +26,7 @@ const userSchema = new mongoose.Schema(
       enum: ['employee', 'storekeeper'],
       default: 'employee',
     },
+    notifications: [notificationSchema],
     refreshToken: { type: String },
   },
   { timestamps: true }

@@ -5,6 +5,7 @@ const {
   logout,
   refreshToken,
   getUserProfile,
+  updateNotificationSettings,
 } = require('../controllers/userController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -24,5 +25,7 @@ router.post('/refresh-token', refreshToken);
 
 // Get authenticated user profile
 router.get('/profile', protect, getUserProfile);
+
+router.post('/notifications/settings', protect, updateNotificationSettings);
 
 module.exports = router;

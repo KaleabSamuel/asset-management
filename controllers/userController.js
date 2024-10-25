@@ -86,8 +86,10 @@ exports.refreshToken = async (req, res) => {
     }
 
     const newAccessToken = generateAccessToken(user);
+    logger.info(`Token Refreshed: ${user.email}`);
     res.json({ accessToken: newAccessToken });
   } catch (error) {
+    logger.error(`Token Refresh Failed: ${error.message}`);
     res.status(403).json({ message: 'Invalid or expired refresh token' });
   }
 };
@@ -101,5 +103,23 @@ exports.getUserProfile = async (req, res) => {
     res.json(user); // Profile now includes firstName and lastName
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+exports.updateNotificationSettings = async (req, res) => {
+  const { notificationsEnabled } = req.body;
+
+  try {
+    const user = await User.findById(req.user._id);
+    user.enabled = notificationsEnabled;
+    await user.save();
+
+    logger.info(`Notification Changed Successfully: ${user.email}`);
+    res.json({ message: 'Notification settings updated successfully' });
+  } catch (error) {
+    logger.error(`Notification Change Failed: ${error.message}`);
+    res
+      .status(500)
+      .json({ message: 'Failed to update settings', error: error.message });
   }
 };

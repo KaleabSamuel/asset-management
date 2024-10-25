@@ -6,7 +6,11 @@ const {
   updateItem,
   deleteItem,
   assignItem,
-  returnOrReassignItem,
+  returnItem,
+  reassignItem,
+  requestItem,
+  searchItems,
+  viewAssignedItems,
 } = require('../controllers/itemController');
 const { protect, storekeeperOnly } = require('../middleware/authMiddleware');
 
@@ -15,6 +19,8 @@ const router = express.Router();
 // Get all items with optional filters (available to all authenticated users)
 router.get('/', protect, getItems);
 
+router.get('/search', protect, searchItems);
+router.get('/assigned', protect, viewAssignedItems);
 // Get a single item by ID
 router.get('/:id', protect, getItemById);
 
@@ -30,12 +36,10 @@ router.delete('/:id', protect, storekeeperOnly, deleteItem);
 // Assign an item to a user (storekeepers only)
 router.post('/assign/:itemId', protect, storekeeperOnly, assignItem);
 
-// Return or reassign an item (storekeepers only)
-router.post(
-  '/return-or-reassign/:itemId',
-  protect,
-  storekeeperOnly,
-  returnOrReassignItem
-);
+router.put('/return/:itemId', protect, storekeeperOnly, returnItem);
+
+router.put('/reassign/:itemId', protect, storekeeperOnly, reassignItem);
+
+router.post('/request/:itemId', protect, requestItem);
 
 module.exports = router;

@@ -1,4 +1,5 @@
 const Item = require('../models/itemModel');
+const logger = require('../config/logger');
 
 // Create a new item
 exports.createItem = async (req, res) => {

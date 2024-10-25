@@ -8,7 +8,6 @@ const logger = require('../config/logger');
 // Register a new user
 exports.register = async (req, res) => {
   const { firstName, lastName, email, password, role } = req.body; // Updated
-  console.log('first');
   try {
     const userExists = await User.findOne({ email });
     if (userExists) {

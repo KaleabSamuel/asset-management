@@ -1,5 +1,7 @@
 const Item = require('../models/itemModel');
 const User = require('../models/userModel');
+const Request = require('../models/requestModel');
+const Assignment = require('../models/assignmentModel');
 const logger = require('../config/logger');
 const mongoose = require('mongoose');
 const { ObjectId } = require('mongodb');
@@ -66,10 +68,7 @@ exports.createItem = async (req, res) => {
 exports.getItems = async (req, res) => {
   const filters = req.query;
   try {
-    const items = await Item.find(filters).populate(
-      'assignments.user',
-      'email'
-    );
+    const items = await Item.find(filters).populate();
     res.json(items);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -152,8 +151,9 @@ exports.deleteItem = async (req, res) => {
  */
 exports.assignItem = async (req, res) => {
   const { userId, returnDate } = req.body;
+  const itemId = req.params.id;
   try {
-    const item = await Item.findById(req.params.itemId);
+    const item = await Item.findById(itemId);
     if (!item) return res.status(404).json({ message: 'Item not found' });
 
     if (item.quantity < 1) {
@@ -162,14 +162,31 @@ exports.assignItem = async (req, res) => {
         .json({ message: 'Insufficient stock to assign this item.' });
     }
 
-    const currentAssignment = item.assignments.find(
-      (a) => a.user.toString() === userId
-    );
+    const currentAssignment = await Assignment.findOne({
+      user: userId,
+      item: itemId,
+    });
     if (currentAssignment) {
       currentAssignment.returnDate = returnDate;
+      currentAssignment.save();
+      logger.info(`Item is already assigned: ${item.name} to user ${userId}`);
+      return res
+        .status(201)
+        .json({ message: 'Item is already assigned successfully', item });
     } else {
-      item.assignments.push({ user: userId, returnDate });
+      const userRequest = await Request.findOne({ user: userId, item: itemId });
+
+      if (userRequest) {
+        await Request.deleteOne({ _id: userRequest._id });
+      }
       item.quantity--;
+
+      const assignment = await Assignment.create({
+        user: userId,
+        item: itemId,
+        assignedDate: new Date(),
+        returnDate: returnDate || null,
+      });
     }
 
     await item.save();
@@ -180,7 +197,7 @@ exports.assignItem = async (req, res) => {
     });
     await user.save();
     logger.info(`Item assigned: ${item.name} to user ${userId}`);
-    res.json({ message: 'Item assigned successfully', item });
+    res.status(201).json({ message: 'Item assigned successfully', item });
   } catch (error) {
     logger.error(`Item assignment error: ${error.message}`);
     res.status(500).json({ message: error.message });
@@ -197,24 +214,24 @@ exports.assignItem = async (req, res) => {
  * @returns {Object} Success message and updated item.
  */
 exports.returnItem = async (req, res) => {
-  const { itemId } = req.params;
+  const { id } = req.params;
   const { userId } = req.body;
 
   try {
-    const item = await Item.findById(itemId);
+    const item = await Item.findById(id);
     if (!item) return res.status(404).json({ message: 'Item not found' });
 
-    const assignmentIndex = item.assignments.findIndex(
-      (a) => a.user.toString() === userId
-    );
+    const assignment = await Assignment.findOneAndDelete({
+      user: userId,
+      item: id,
+    });
 
-    if (assignmentIndex === -1) {
+    if (!assignment) {
       return res
         .status(400)
         .json({ message: 'No active assignment found for this user.' });
     }
 
-    item.assignments.splice(assignmentIndex, 1);
     item.quantity++;
     await item.save();
 
@@ -247,31 +264,49 @@ exports.returnItem = async (req, res) => {
  * @returns {Object} Success message and updated item.
  */
 exports.reassignItem = async (req, res) => {
-  const { itemId } = req.params;
+  const { id } = req.params;
   const { currentUserId, newUserId, returnDate } = req.body;
 
   try {
-    const item = await Item.findById(itemId);
+    const item = await Item.findById(id);
     if (!item) return res.status(404).json({ message: 'Item not found' });
 
     // Find the index of the current assignment
-    const assignmentIndex = item.assignments.findIndex(
-      (a) => a.user.toString() === currentUserId
-    );
+    const assignment = await Assignment.findOneAndDelete({
+      user: currentUserId,
+      item: id,
+    });
 
-    if (assignmentIndex === -1) {
+    if (!assignment) {
       return res
         .status(400)
         .json({ message: 'No active assignment found for the current user.' });
     }
 
-    // Remove the old assignment from the array
-    item.assignments.splice(assignmentIndex, 1);
+    const newAssigned = await Assignment.findOne({
+      user: newUserId,
+      item: id,
+    });
 
-    // Create a new assignment for the new user
-    item.assignments.push({ user: newUserId, returnDate });
+    if (!newAssigned) {
+      const newAssignment = await Assignment.create({
+        user: newUserId,
+        item: id,
+        assignedDate: new Date(),
+        returnDate: returnDate || null,
+      });
 
-    await item.save();
+      // Notify the new user
+      const newUser = await User.findById(newUserId);
+      newUser.notifications.push({
+        message: `You have been assigned ${item.name}.`,
+        type: 'assignment',
+      });
+      await newUser.save();
+
+      item.quantity++;
+      await item.save();
+    }
 
     // Notify the previous user
     const currentUser = await User.findById(currentUserId);
@@ -279,14 +314,6 @@ exports.reassignItem = async (req, res) => {
       message: `Item ${item.name} has been reassigned from you.`,
     });
     await currentUser.save();
-
-    // Notify the new user
-    const newUser = await User.findById(newUserId);
-    newUser.notifications.push({
-      message: `You have been assigned ${item.name}.`,
-      type: 'assignment',
-    });
-    await newUser.save();
 
     logger.info(`Item reassigned successfully ${item.name}`);
     res.json({ message: 'Item reassigned successfully', item });
@@ -308,20 +335,40 @@ exports.reassignItem = async (req, res) => {
  * @returns {Object} Success message.
  */
 exports.requestItem = async (req, res) => {
-  const { itemId } = req.params;
-  const userId = req.body.userId;
+  const { id } = req.params;
+  const userId = req.user.id;
 
   try {
-    const item = await Item.findById(itemId);
+    const item = await Item.findById(id);
     if (!item) return res.status(404).json({ message: 'Item not found' });
 
     if (item.quantity <= 0) {
       return res.status(400).json({ message: 'Item is out of stock' });
     }
 
+    const userRequest = await Request.findOne({ user: userId, item: id });
+
+    if (userRequest) {
+      return res
+        .status(404)
+        .json({ message: 'You have already requested for this Item' });
+    }
+
+    const assigned = await Assignment.findOne({
+      user: userId,
+      item: id,
+    });
+
+    if (assigned)
+      return res
+        .status(404)
+        .json({ message: 'You have been already assigned for this Item' });
+
     const user = await User.findById(userId);
-    user.notifications.push({ message: `Requested item: ${item.name}` });
-    await user.save();
+    const request = await Request.create({
+      user: userId,
+      item: id,
+    });
 
     logger.info(`User ${user.name} Requested ${item.name} Successfully`);
     res.json({
@@ -347,7 +394,6 @@ exports.requestItem = async (req, res) => {
 exports.searchItems = async (req, res) => {
   const { name, category } = req.query;
   const filter = {};
-  console.log('works');
   if (name) filter.name = new RegExp(name, 'i');
   if (category) filter.category = new RegExp(category, 'i');
 
@@ -370,9 +416,13 @@ exports.searchItems = async (req, res) => {
  */
 exports.viewAssignedItems = async (req, res) => {
   try {
-    const items = await Item.find({
-      'assignments.user': req.user.id,
-    });
+    // const items = await Item.find({
+    //   'assignments.user': req.user.id,
+    // });
+
+    const items = await Assignment.find({ user: req.user.id })
+      .populate('user', 'firstName lastName')
+      .populate('item', 'name description model category');
 
     if (!items || items.length === 0) {
       return res.status(404).json({ message: 'No items assigned to you.' });

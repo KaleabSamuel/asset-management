@@ -4,6 +4,7 @@ const {
   generateRefreshToken,
 } = require('../utils/jwtUtils');
 const logger = require('../config/logger');
+const jwt = require('jsonwebtoken');
 
 /**
  * @function register

@@ -43,16 +43,16 @@ router.get('/:id', protect, getItemById);
 
 router.post('/', protect, storekeeperOnly, createItem);
 
+router.post('/assign/:id', protect, storekeeperOnly, assignItem);
+
+router.post('/request/:id', protect, requestItem);
+
 router.put('/:id', protect, storekeeperOnly, updateItem);
 
+router.put('/return/:id', protect, storekeeperOnly, returnItem);
+
+router.put('/reassign/:id', protect, storekeeperOnly, reassignItem);
+
 router.delete('/:id', protect, storekeeperOnly, deleteItem);
-
-router.post('/assign/:itemId', protect, storekeeperOnly, assignItem);
-
-router.put('/return/:itemId', protect, storekeeperOnly, returnItem);
-
-router.put('/reassign/:itemId', protect, storekeeperOnly, reassignItem);
-
-router.post('/request/:itemId', protect, requestItem);
 
 module.exports = router;
